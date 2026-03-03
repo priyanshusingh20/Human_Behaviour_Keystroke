@@ -11,13 +11,13 @@ class Enroller:
         self.username = input("type your username : ")
         self.template_number = 8 if self.operation == "password" else 3
         self.input_word = input(
-            "type your password : ") if self.operation == "password" else "il futuro è passato di qui"
+            "type your password : ") if self.operation == "password" else "Hello world"
 
     def start_enroll(self):
         if self.operation == "password":
             print("Please, type your password 8 times")
         else:
-            print('Please, type "il futuro è passato di qui" 3 times')
+            print('Please, type "Hello world" 3 times')
         listener = KeyboardListener(self.input_word, self.template_number)
         listener.start_listener()
 
