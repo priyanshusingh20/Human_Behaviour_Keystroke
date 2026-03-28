@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Keystroke Authentication</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+        }
+
+        .container {
+            width: 420px;
+            margin: 60px auto;
+            padding: 30px;
+            background: #1e293b;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .verify { background: #38bdf8; }
+        .enroll { background: #22c55e; }
+        .reset { background: #ef4444; }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .result { margin-top: 15px; font-weight: bold; }
+        .verified { color: #22c55e; }
+        .not-verified { color: #ef4444; }
+
+        .progress-bar {
+            margin-top: 10px;
+            height: 10px;
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .progress {
+            height: 100%;
+            background: #22c55e;
+            width: {{ confidence|default(0) }}%;
+        }
+
+        .box {
+            margin-top: 15px;
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 10px;
+            font-size: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .counter {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Keystroke Authentication</h2>
+
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" id="username"><br>
+        <input type="password" name="password" placeholder="Password"><br>
+        <input type="text" name="typed" id="typed" placeholder="Type helloworld"><br>
+
+        <div id="status">Start typing...</div>
+
+        <input type="hidden" name="keystrokes" id="keystrokes">
+
+        <button class="verify" type="submit">Login</button>
+        <button class="enroll" type="button" onclick="enrollUser()">Enroll</button>
+        <button class="reset" type="button" onclick="resetData()">Reset</button>
+        <button type="button" onclick="showGraph()">Show Graph</button>
+        <button type="button" onclick="identifyUser()">Identify User</button>
+
+        <canvas id="chart" width="350" height="200"></canvas>
+    </form>
+
+    <div class="counter" id="sampleCount">Samples: 0</div>
+
+    {% if result %}
+        <div class="result {% if 'VERIFIED' in result %}verified{% else %}not-verified{% endif %}">
+            {{ result }}
+        </div>
+
+        <p>NB: {{ nb }}</p>
+        <p>L2: {{ l2 }}</p>
+        <p>Confidence: {{ confidence }}%</p>
+
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+    {% endif %}
+
+    <div class="box" id="datasetBox">Dataset preview...</div>
+</div>
+
+<script>
+function identifyUser() {
+
+    if (keystrokes.length === 0) {
+        alert("No typing data captured!");
+        return;
+    }
+
+    fetch('/identify', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: "keystrokes=" + encodeURIComponent(JSON.stringify(keystrokes))
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Detected User: " + data.user + "\nConfidence: " + data.confidence + "%");
+    });
+}
+
+window.onload = function() {
+    let saved = localStorage.getItem("keystrokes");
+
+    if (saved) {
+        keystrokes = JSON.parse(saved);
+        console.log("Restored keystrokes:", keystrokes);
+    }
+};
+function resetData() {
+    keystrokes = [];
+    input.value = "";
+    status.innerText = "Reset done";
+
+    localStorage.removeItem("keystrokes"); //  important
+}
+
+let keystrokes = [];
+let lastDown = null;
+let chart = null;
+
+// typing capture
+const input = document.getElementById("typed");
+const status = document.getElementById("status");
+
+input.addEventListener("keydown", e => {
+    let now = Date.now();
+
+    if (lastDown !== null) {
+        keystrokes.push({
+            key: e.key,
+            press_press: now - lastDown,
+            hold_time: 0,
+            release_press: now - lastDown
+        });
+    }
+
+    lastDown = now;
+    status.innerText = "Typing...";
+});
+
+input.addEventListener("keyup", e => {
+    status.innerText = "Keep typing...";
+});
+
+// submit
+document.querySelector("form").addEventListener("submit", () => {
+    document.getElementById("keystrokes").value = JSON.stringify(keystrokes);
+
+    //  SAVE DATA
+    localStorage.setItem("keystrokes", JSON.stringify(keystrokes));
+});
+
+// enroll
+function enrollUser() {
+    let data = new FormData();
+
+    data.append("username", document.getElementById("username").value);
+    data.append("typed", document.getElementById("typed").value);
+    data.append("keystrokes", JSON.stringify(keystrokes));
+
+    fetch("/enroll", {
+        method: "POST",
+        body: data
+    })
+    .then(res => res.text())
+    .then(msg => {
+        alert(msg);
+        loadDataset();
+    });
+}
+
+// reset
+function resetData() {
+    keystrokes = [];
+    input.value = "";
+    status.innerText = "Reset done";
+
+    if (chart) {
+        chart.destroy();
+    }
+}
+
+// dataset viewer
+function loadDataset() {
+    let username = document.getElementById("username").value || "priyanshu";
+    let typed = document.getElementById("typed").value || "helloworld";
+
+    fetch(`/dataset?username=${username}&typed=${typed}`)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("sampleCount").innerText = "Samples: " + data.length;
+        document.getElementById("datasetBox").innerText = JSON.stringify(data.slice(-3), null, 2);
+    });
+}
+
+//  FIXED GRAPH FUNCTION (WORKING)
+function showGraph() {
+
+    let speeds = keystrokes.map(k => k.press_press);
+
+    if (speeds.length === 0) {
+        alert("No typing data available!");
+        return;
+    }
+
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: speeds.map((_, i) => i + 1),
+            datasets: [{
+                label: "Typing Speed (ms)",
+                data: speeds,
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+}
+</script>
+
+</body>
+</html>

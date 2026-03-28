@@ -1,0 +1,15 @@
+# Ignore virtual environment
+.venv/
+
+# Ignore IDE files
+.idea/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+
+# Optional: ignore large results
+results/

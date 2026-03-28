@@ -1,0 +1,10 @@
+body {
+    background: #0f172a;
+    color: white;
+}
+
+input, button {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+}

@@ -114,7 +114,7 @@ class KeyboardListener:
         timer = time.perf_counter()
         time.sleep(1)
         if self.operation == "identification":
-            print('Please, type "Hello world"')
+            print('Please, type "helloworld"')
         while self.template_index < self.template_number:
 
             print('\nStart listener')
