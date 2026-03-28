@@ -17,3 +17,5 @@ This project uses typing patterns (keystroke dynamics) for user authentication.
 ## Run
 pip install -r requirements.txt  
 python app.py
+
+![alt text](image.png)
