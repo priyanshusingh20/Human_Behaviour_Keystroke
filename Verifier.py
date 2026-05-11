@@ -69,7 +69,7 @@ class Verifier:
     def compare_metrics(self, probe):
 
         word = self.input_word
-        file_path = f'dataset/password/{self.username}_{word}.json'
+        file_path = f'dataset/passphrase/{self.username}_{word}.json'
 
         print("Looking for file:", file_path)
 

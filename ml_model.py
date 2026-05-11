@@ -47,7 +47,7 @@ class MultiUserModel:
         X = []
         y = []
 
-        base_path = "dataset/password"
+        base_path = "dataset/passphrase"
 
         if not os.path.exists(base_path):
             print(" Dataset folder not found")

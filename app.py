@@ -142,7 +142,7 @@ def enroll():
             }
 
         word = "-".join(typed.split(" "))
-        file_path = f'dataset/password/{username}_{word}.json'
+        file_path = f'dataset/passphrase/{username}_{word}.json'
 
         if os.path.exists(file_path):
             with open(file_path) as f:
@@ -165,7 +165,7 @@ def dataset():
     username = request.args.get('username')
     typed = request.args.get('typed')
 
-    file_path = f'dataset/password/{username}_{typed}.json'
+    file_path = f'dataset/passphrase/{username}_{typed}.json'
 
     if not os.path.exists(file_path):
         return []

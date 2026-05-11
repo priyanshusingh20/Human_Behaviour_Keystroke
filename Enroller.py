@@ -24,7 +24,7 @@ class Enroller:
         if self.operation == "password":
             password = self.input_word.split(" ")
             password = "-".join(password)
-            with open("dataset/password/" + self.username + '_' + password + '.json', "w") as fp:
+            with open("dataset/passphrase/" + self.username + '_' + password + '.json', "w") as fp:
                 json.dump(listener.probe_list, fp, indent=4)
         else:
             with open("dataset/passphrase/" + self.username + '.json', "w") as fp:
